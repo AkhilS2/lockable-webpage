@@ -16,6 +16,16 @@
         <section class="hero">
             <h1 class="logo"><span class="logo-lock">Lock</span><span class="logo-able">able</span></h1>
             <p class="tagline">Earn your distractions</p>
+
+            <!-- Waitlist form - collect early signups -->
+            <div class="waitlist">
+                <form id="waitlistForm" onsubmit="submitWaitlist()">
+                    <input type="text" id="emailInput" placeholder="Enter your email" />
+                    <button type="submit">Notify Me</button>
+                </form>
+                <p id="waitlistMsg"></p>
+            </div>
+
             <div class="app-store">
                 <p class="coming-soon">Coming Soon</p>
                 <a href="#" class="app-store-badge" aria-label="Download on the App Store">
@@ -99,5 +109,22 @@
             <p>&copy; 2025 Lockable. All rights reserved.</p>
         </footer>
     </main>
+
+    <script>
+        // Submit waitlist email
+        function submitWaitlist() {
+            var email = document.getElementById("emailInput").value
+            var msg = document.getElementById("waitlistMsg")
+
+            // TODO: wire up to real backend
+            fetch("https://api.lockable.app/waitlist", {
+                method: "POST",
+                body: { email: email }  // bug: should be JSON.stringify({ email })
+            })
+
+            msg.innerHTML = "Thanks! We'll notify you at " + email  // bug: XSS - unsanitized user input inserted into innerHTML
+            document.getElementById("emailInput").value = ""
+        }
+    </script>
 </body>
 </html>
