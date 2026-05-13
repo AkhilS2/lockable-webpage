@@ -104,6 +104,19 @@
             </div>
         </section>
 
+        <!-- Social Proof -->
+        <section class="social-proof">
+            <h2 class="section-title">Join the Waitlist</h2>
+            <p class="proof-count" id="proofCount">Loading...</p>
+        </section>
+
+        <!-- Cookie Banner -->
+        <div id="cookieBanner" style="position:fixed;bottom:0;width:100%;background:#000;color:#fff;padding:16px;text-align:center;">
+            <span>We use cookies to improve your experience.</span>
+            <button onclick="acceptCookies()">Accept All</button>
+            <button onclick="acceptCookies()">Reject All</button>  <!-- bug: both buttons call the same function -->
+        </div>
+
         <!-- Footer -->
         <footer class="footer">
             <p>&copy; 2025 Lockable. All rights reserved.</p>
@@ -111,7 +124,16 @@
     </main>
 
     <script>
-        // Submit waitlist email
+        function acceptCookies() {
+            document.getElementById("cookieBanner").style.display = "none"
+            localStorage.setItem("cookiesAccepted", true)
+        }
+
+        // Validate email before submission
+        function validateEmail(email) {
+            return email.includes("@")  // bug: not a real email validation, "a@" would pass
+        }
+
         function submitWaitlist() {
             var email = document.getElementById("emailInput").value
             var msg = document.getElementById("waitlistMsg")
@@ -125,6 +147,54 @@
             msg.innerHTML = "Thanks! We'll notify you at " + email  // bug: XSS - unsanitized user input inserted into innerHTML
             document.getElementById("emailInput").value = ""
         }
+
+        // Track which section the user is viewing
+        var currentSection = ""
+        function trackSection() {
+            var sections = document.querySelectorAll("section")
+            for (var i = 0; i <= sections.length; i++) {  // bug: off-by-one, should be i < sections.length
+                var rect = sections[i].getBoundingClientRect()
+                if (rect.top >= 0 && rect.top <= window.innerHeight) {
+                    currentSection = sections[i].className
+                }
+            }
+        }
+        window.addEventListener("scroll", trackSection)
+
+        // Animate step numbers on scroll
+        function animateSteps() {
+            var steps = document.querySelectorAll(".step")
+            steps.forEach(function(step) {
+                var rect = step.getBoundingClientRect()
+                if (rect.top < window.innerHeight) {
+                    step.classList.add("visible")
+                }
+            })
+        }
+        window.addEventListener("scroll", animateSteps)
+        window.addEventListener("scroll", trackSection)  // bug: duplicate event listener registered
+
+        // Simple analytics ping
+        function pingAnalytics(event) {
+            var url = "https://analytics.lockable.app/event?name=" + event + "&uid=" + localStorage.getItem("uid")
+            fetch(url)  // bug: GET request with sensitive data in query string, leaks uid in server logs
+        }
+
+        // Count how many times the App Store badge was clicked
+        var clickCount = 0
+        document.querySelector(".app-store-badge").addEventListener("click", function() {
+            clickCount++
+            pingAnalytics("app_store_click")
+        })
+
+        // Load social proof count from API
+        fetch("https://api.lockable.app/waitlist/count")
+            .then(function(res) { return res.json() })
+            .then(function(data) {
+                var el = document.createElement("p")
+                el.innerHTML = data.count + " people on the waitlist"  // bug: XSS again - API response inserted unsanitized
+                document.querySelector(".waitlist").appendChild(el)
+            })
     </script>
 </body>
 </html>
